@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
 	"time"
 
@@ -34,6 +35,10 @@ func newServer() *server {
 func (s *server) setUpRoutes() {
 	s.router.Handle("/ws", s.socketHandler)
 	s.router.HandleFunc("/get", s.outPutStrokes)
+	indexTemplate := template.Must(template.ParseFiles("template/index.html"))
+	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		indexTemplate.Execute(w, s.strokeStamps)
+	})
 }
 
 func (s *server) outPutStrokes(w http.ResponseWriter, r *http.Request) {
