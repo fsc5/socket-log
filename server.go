@@ -12,7 +12,7 @@ type server struct {
 	router        *mux.Router
 	socketHandler *wsHandler
 	strokeStamps  []KeyStamp
-	strokeInput   chan KeyStamp
+	strokeInput   <-chan KeyStamp
 }
 
 type KeyStamp struct {

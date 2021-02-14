@@ -10,18 +10,19 @@ import (
 )
 
 type wsHandler struct {
-	upgrader    websocket.Upgrader
-	stampDirect chan KeyStamp
+	upgrader   websocket.Upgrader
+	sendStamps chan<- KeyStamp
+	keyStrokes []string
 }
 
-func newWsHandler(stampDirect chan KeyStamp) *wsHandler {
+func newWsHandler(sendStamps chan<- KeyStamp) *wsHandler {
 	return &wsHandler{
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 			CheckOrigin:     func(r *http.Request) bool { return true },
 		},
-		stampDirect: stampDirect,
+		sendStamps: sendStamps,
 	}
 }
 
@@ -32,13 +33,10 @@ func (ws *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer con.Close()
-	keyStrokes := make([]string, 0)
-	con.WriteMessage(websocket.TextMessage, []byte("Hello :)"))
 	stopChan := make(chan bool)
 	mutex := &sync.Mutex{}
 
-	go ws.clearList(&keyStrokes, mutex, stopChan)
-
+	go ws.clearList(mutex, stopChan)
 	for {
 		_, msg, err := con.ReadMessage()
 		mutex.Lock()
@@ -47,34 +45,34 @@ func (ws *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 			break
 		}
-		keyStrokes = append(keyStrokes, string(msg))
+		ws.keyStrokes = append(ws.keyStrokes, string(msg))
 		stopChan <- false
 		mutex.Unlock()
 	}
 }
 
-func (ws *wsHandler) clearList(keystrokes *[]string, mutex *sync.Mutex, interruptChan chan bool) {
+func (ws *wsHandler) clearList(mutex *sync.Mutex, interruptChan chan bool) {
 	for {
 		select {
 		case stopped := <-interruptChan:
 			if stopped {
-				ws.transferStrokes(keystrokes)
+				ws.transferStrokes()
 				return
 			}
 		case <-time.After(time.Second * 5):
 			mutex.Lock()
-			ws.transferStrokes(keystrokes)
+			ws.transferStrokes()
 			mutex.Unlock()
 		}
 	}
 }
 
-func (ws *wsHandler) transferStrokes(keystrokes *[]string) {
-	if len(*keystrokes) > 0 {
-		ws.stampDirect <- KeyStamp{
-			Strokes: *keystrokes,
+func (ws *wsHandler) transferStrokes() {
+	if len(ws.keyStrokes) > 0 {
+		ws.sendStamps <- KeyStamp{
+			Strokes: ws.keyStrokes,
 			Time:    time.Now(),
 		}
-		*keystrokes = make([]string, 0)
+		ws.keyStrokes = make([]string, 0)
 	}
 }
