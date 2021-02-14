@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Keylogger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+</head>
+
+<body>
+  <header>
+    <h1>Keylogger</h1>
+  </header>
+  <main>
+    <table class="u-full-width">
+      <thead>
+        <tr>
+          <th>IP</th>
+          <th>Time</th>
+          <th>Keys</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .}}
+        <tr>
+          <th>{{.IP}}</th>
+          <td>{{.Time.Format "15:04"}}</td>
+          <td>{{range .Strokes}}{{.}}{{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </main>
+</body>
+
+<style>
+  body {
+    margin-top: 15rem;
+    margin-left: 10rem;
+    margin-right: 10rem;
+  }
+
+  header {
+    text-align: center;
+  }
+
+  main {
+    margin-top: 8rem;
+  }
+</style>
+
+</html>
