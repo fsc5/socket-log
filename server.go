@@ -17,6 +17,7 @@ type server struct {
 
 type KeyStamp struct {
 	Time    time.Time
+	IP      string
 	Strokes []string
 }
 
