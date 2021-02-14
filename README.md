@@ -8,6 +8,7 @@ This is the websocket endpoint. It will accept every valid websocket request. Th
 You can get an json representation of the keystrokes over this endpoint. The keystrokes are organized by time.
 
 **Pls dont use this project in any illegal way!**
+
 I use this project just for learning purposes. So every suggestion for improvement is appreciated ;)
 
 (I'm also not a native English speaker so grammar or spelling corrections are also appreciated)
