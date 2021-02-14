@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -35,8 +36,12 @@ func (ws *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer con.Close()
 	stopChan := make(chan bool)
 	mutex := &sync.Mutex{}
-
-	go ws.clearList(mutex, stopChan)
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	go ws.clearList(mutex, stopChan, ip)
 	for {
 		_, msg, err := con.ReadMessage()
 		mutex.Lock()
@@ -51,27 +56,28 @@ func (ws *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ws *wsHandler) clearList(mutex *sync.Mutex, interruptChan chan bool) {
+func (ws *wsHandler) clearList(mutex *sync.Mutex, interruptChan chan bool, ip string) {
 	for {
 		select {
 		case stopped := <-interruptChan:
 			if stopped {
-				ws.transferStrokes()
+				ws.transferStrokes(ip)
 				return
 			}
 		case <-time.After(time.Second * 5):
 			mutex.Lock()
-			ws.transferStrokes()
+			ws.transferStrokes(ip)
 			mutex.Unlock()
 		}
 	}
 }
 
-func (ws *wsHandler) transferStrokes() {
+func (ws *wsHandler) transferStrokes(ip string) {
 	if len(ws.keyStrokes) > 0 {
 		ws.sendStamps <- KeyStamp{
 			Strokes: ws.keyStrokes,
 			Time:    time.Now(),
+			IP:      ip,
 		}
 		ws.keyStrokes = make([]string, 0)
 	}
